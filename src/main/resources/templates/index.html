@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html>
+<head xmlns:th="http://www.thymeleaf.org">
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>Locker</title>
+	
+	<!-- <link rel="stylesheet" href="css/bootstrap.css"> -->
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+	<link rel="stylesheet" href="css/dataTables.bootstrap4.min.css"> 
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="https://cdn.datatables.net/buttons/1.6.2/css/buttons.dataTables.min.css">
+	
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+	<script src="js/bootstrap.js "></script>
+	<script src="js/jquery.dataTables.min.js"></script>
+	<script src="js/dataTables.bootstrap4.min.js"></script>
+	
+	<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+	<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.flash.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+	<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js"></script>
+	<script src="https://cdn.datatables.net/buttons/1.6.2/js/buttons.print.min.js"></script>
+	
+
+	
+
+		
+	<script >
+	
+		$( document ).ready(function() {
+			getAllData();
+			function getAllData(){
+				var arrayReturn = [];
+	            $.ajax({
+	                url: "/api/locking/status",
+	                async: false,
+	                dataType: 'json',
+	                success: function (data) {
+						for (var i = 0, len = data.length; i < len; i++) {
+							var desc = data[i].body;
+							if(data[i].status== true){
+								   Status ='Not Parkid';
+							   }else{
+								   Status = 'Locked';
+							   }
+							arrayReturn.push([ i,
+											   data[i].ownerName,
+											   data[i].phoneNo,
+											   data[i].noItems,
+											   data[i].lockIn,
+											   data[i].checkOut,
+											   data[i].amount,
+											   Status,
+											   '<a href="#" class="shortcut" data-toggle="modal" data-target="#editModal" data-whatever="Edit Info" data-id="'+data[i].id+'">'+
+												'<span class="shortcut-label badge badge-info"><i class="fa fa-pencil-square-o">Edit</i></span>'+ 
+											'</a>'
+											   
+											   
+											 ]);
+						}
+					inittable(arrayReturn);
+	                }
+	            });
+			}
+			
+            function inittable(data) {	
+        		//console.log(data);
+        		$('#allData').DataTable( {
+        			"aaData": data
+        		} );
+        	}
+            
+            
+			
+			 $('#createModal').on('show.bs.modal', function (event) {
+				  var button = $(event.relatedTarget) // Button that triggered the modal
+				  var modelTitle = button.data('whatever')
+				  var target = button.data('target')
+				  var modal = $(this)
+				  modal.find('.modal-title').text('' + modelTitle)
+				  $(this).closest('form').find("input[type=text], textarea").val("");
+				  //$('#plateNumber').val('56-3274')
+				  //modal.find('.modal-dialog-centered').addClass(' '+modelsize)
+			}); 
+            $('#checkoutBtn').submit(function(e){
+				e.preventDefault();
+				
+				var frm = $("#checkoutBtn");
+				var data={};
+				$.each(this,function(i,v){
+					var input=$(v);
+					data[input.attr("name")]=input.val();
+					
+					delete data["undefined"];
+				});
+				alert(frm+data)
+				CheckOut(frm,data);
+				
+		 });
+           
+			 $('#parkForm').submit(function(e){
+					e.preventDefault();
+					
+					var frm = $("#parkForm");
+					var data={};
+					$.each(this,function(i,v){
+						var input=$(v);
+						data[input.attr("name")]=input.val();
+						
+						delete data["undefined"];
+					});
+					
+					saveRequestData(frm,data);
+					
+					$('#createModal').modal('hide');
+					reloadPage();
+			 });
+			 
+			 function saveRequestData(frm,data){
+					$.ajax({
+						contentType:"application/json",
+						type:frm.attr("method"),
+						url:frm.attr("action"),
+						dataType:"json",
+						data:JSON.stringify(data),
+						success:function(result,textStatus, xhr){
+							console.log(xhr.status);
+							
+							alertMsg(xhr.status,);
+														
+						}
+					
+					
+					});
+					//getAllData();
+			 }
+			 function alertMsg(code){
+				 if(code==201){
+					 alert(code+' - '+'Data Save Successfully!');
+				 }else if(code==417){
+					 alert(code+' - '+'Expectation Failed');
+				 }else if(code==200){
+					 alert(code+' - '+'Successfully check out the vehicle.');
+				 }else if(code==404){
+					 alert(code+' - '+'No Data Found.');
+				 }
+				 else if(code==500){
+					 alert(code+' - '+'OTP Not Matched.');
+				 }
+				 
+			 }
+			 function updateRequestData(frm,data){
+				
+				
+					$.ajax({
+						contentType:"application/json",
+						type:frm.attr("method"),
+						url:frm.attr("action"),
+						dataType:"json",
+						data:JSON.stringify(data),
+						success:function(result){
+							
+							//fetchList(type);
+						}
+					
+					
+					});
+				}
+			 
+			 $('#searchModal').on('show.bs.modal', function (event) {
+				  var button = $(event.relatedTarget) // Button that triggered the modal
+				  var modelTitle = button.data('whatever')
+				  var target = button.data('target')
+				  var modal = $(this)
+				  modal.find('.modal-title').text('' + modelTitle)
+				  $(this).closest('form').find("input[type=text], textarea").val("");
+				  
+			}); 
+			 $('#editModal').on('show.bs.modal', function (event) {
+				  var button = $(event.relatedTarget) // Button that triggered the modal
+				  var modelTitle = button.data('whatever')
+				  var modelgetID = button.data('id')
+				  var target = button.data('target')
+				  var modal = $(this)
+				  modal.find('.modal-title').text(''+ modelTitle)
+				  
+				  $.ajax({
+						type:'GET',
+						url:'/api/searchbyid/'+modelgetID,
+						dataType: 'json',
+						contectType:'application/json',
+						success: function(result,textStatus, xhr){
+							console.log(result);
+							console.log(xhr.status);
+							if(xhr.status==200){
+							
+							$("#Eid").val(result.id);
+							$("#EplateNumber").val(result.noItems);
+							$("#EparkerName").val(result.ownerName);
+							$("#EparkerPhoneNo").val(result.phoneNo);
+							
+							
+							}else{
+								var  html='No data found.';
+							}	
+							if(result.parkOut!= null){
+								
+								$('#searchModal input[type=submit]').prop('disabled', true);
+							}
+							$('#searchResult').html(html); 
+						}
+					});
+				  
+				 
+			}); 
+			 $('#reportModal').on('show.bs.modal', function (event) {
+				  var button = $(event.relatedTarget) // Button that triggered the modal
+				  var modelTitle = button.data('whatever')
+				  var target = button.data('target')
+				  var modal = $(this)
+				  modal.find('.modal-title').text('' + modelTitle)
+				 
+				  var arrayReturn = [];
+		            $.ajax({
+		                url: "/api/lockings",
+		                async: false,
+		                dataType: 'json',
+		                success: function (data) {
+							for (var i = 0, len = data.length; i < len; i++) {
+								var desc = data[i].body;
+								if(data[i].status== true){
+									   Status ='check out';
+								   }else{
+									   Status = 'locked';
+								   }
+								arrayReturn.push([ i,
+												   data[i].ownerName,
+												   data[i].phoneNo,
+												   data[i].noItems,
+												   data[i].lockIn,
+												   data[i].checkOut,
+												   data[i].amount,
+												   Status
+												   
+												   
+												 ]);
+							}
+						//inittable(arrayReturn);
+							$('#reportData').DataTable( {
+			        			"aaData": arrayReturn,
+			        			dom: 'Bfrtip',
+			        	        buttons: [
+			        	             'csv', 'excel', 'pdf', 'print'
+			        	        ]
+			        		} );
+		                }
+		            });
+			}); 
+			 
+			 
+			 $('.searchBtn').on('click',function(event){
+				 event.preventDefault();
+				 $('#searchModal').modal();
+			  }); 
+			 
+			 $('.sBtn').on('click',function(event){
+				 event.preventDefault();
+				 var plateNumber = $("#searchModal #plateNumber").val();
+				 
+				 $.ajax({
+						type:'GET',
+						url:'/api/lockings/otp/?phoneNo='+plateNumber,
+						dataType: 'json',
+						contectType:'application/json',
+						success: function(result,textStatus, xhr){
+							console.log("ddd"+ result);
+							console.log("ddd:"+xhr.status);
+							if(xhr.status==200){
+							
+							var html ='<table class="table table-sm">';
+							html += '<tr scope="row">';
+							html += '<th>ID: </th>';
+							html += '<td>'+result.id+'<input type="hidden" id="id" name="id" value="'+result.id+'"/></td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>Name : </th>';
+							html += '<td>'+result.ownerName+'</td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>PhoneNo: </th>';
+							html += '<td>'+result.phoneNo+'</td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>Number Of Item: </th>';
+							html += '<td>'+result.noItems+'</td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>In Time: </th>';
+							html += '<td>'+result.lockIn+'</td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>CheckOut Time: </th>';
+							html += '<td>'+result.checkOut+'</td>';
+							html += '</tr>';
+							
+							
+							
+							html += '<tr scope="row">';
+							html += '<th>Amount TK: </th>';
+							html += '<td>'+result.amount+'</td>';
+							html += '</tr>';
+							
+							html += '<tr scope="row">';
+							html += '<th>OTP </th>'; 
+							html += '<td>';
+							html += '<div class="col-lg">'; 
+							html += '<input class="form-control" type="text" id="OTP" name="OTP" required>'; 
+							html += '</div>';
+				      		html += '</td></tr>'; 
+							
+							html += '</table> ';
+							}else{
+								var  html='No data found.';
+							}	
+							if(result.checkOut!= null){
+								
+								$('#searchModal input[type=submit]').prop('disable', true);
+							}
+							$('#searchResult').html(html); 
+						}
+					});
+			 });
+			 
+			 $("#checkoutForm").submit(function(event){
+				 event.preventDefault();
+				 
+				 var frm = $("#checkoutForm");
+				 var data={};
+				 $.each(this,function(i,v){
+						var input=$(v);
+						//console.log("attribute:" + input.attr("name"));
+						//console.log("attribute val:" + input.val());
+						data[input.attr("name")]=input.val();
+						delete data["undefined"];
+					});
+				 
+				 CheckOut(frm,data);
+				 $('#searchModal').modal('hide');
+				 reloadPage();
+				 
+			 });
+			 function CheckOut(frm,data){
+				 console.log("chk:" + data.id);
+					$.ajax({
+						contentType:"application/json",
+						type:frm.attr("method"),
+						url:frm.attr("action")+data.id+"/"+data.OTP,
+						dataType:"json",
+						//data:JSON.stringify(data),
+						success:function(result,textStatus, xhr){
+							console.log(xhr.status);
+							alertMsg(xhr.status);
+							
+						},
+						error: function(xhr, textStatus, errorThrown) {
+							alertMsg(500);
+				            //console.log("AJAX request failed:", errorThrown);
+				            // You can add error handling here if needed
+				        }
+					});
+					
+			}
+			function reloadPage(){
+			        location.reload(true);
+			}
+			 $("#editForm").submit(function(event){
+				 event.preventDefault();
+				 
+				 var frm = $("#editForm");
+				 var data={};
+				 $.each(this,function(i,v){
+						var input=$(v);
+						data[input.attr("name")]=input.val();
+						delete data["undefined"];
+					});
+				 //alert(data);
+				 editID(frm,data);
+				 $('#editModal').modal('hide');
+				 reloadPage();
+				 
+			 });
+			 function editID(frm,data){
+				 //alert(data.Eid);
+					$.ajax({
+						contentType:"application/json",
+						type:frm.attr("method"),
+						url:frm.attr("action")+data.id,
+						dataType:"json",
+						data:JSON.stringify(data),
+						success:function(result,textStatus, xhr){
+							console.log(xhr.status);
+							alertMsg(xhr.status);
+							
+						}
+					});
+					
+			}
+    
+		});
+		
+	</script>
+</head>
+<body>
+	<div class="row">
+		<div class="pg_jumbotron">
+			<h1 class="display-3"></h1>
+			<p class="lead"></p>
+			<hr class="my-4">
+
+		</div>
+	</div>
+	<div class="row">
+		<div class="widget">
+			<div class="widget-header"> <i class="icon-bookmark"></i>
+				<!--<h3>Important Shortcuts</h3>-->
+			</div>
+			<!-- <button type="button" class="btn btn-success nBtn">NEW</button> -->
+			<!-- /widget-header -->
+			<div class="widget-content">
+
+				<div class="shortcuts"> 
+					<div class="row">
+						<div class="col">
+							<a href="#" class="shortcut" data-toggle="modal" data-target="#createModal" data-whatever="Lock Item">
+								<!-- <i class="shortcut-icon icon-list-alt"></i> -->
+								<img class="img" src="images/locker.jpg" alt="Snow" style="width: 200px; height: 160px;">
+								<span class="shortcut-label">Lock a Item</span> 
+							</a>
+						</div>
+						<!-- <div class="col">
+							<a href="#" class="shortcut nBtn">
+								<img class="img" src="images/bike3.png" alt="Snow" style="">
+								<span class="shortcut-label">Park the Motor Bike</span> 
+							</a>
+						</div>
+						<div class="col">
+							<a href="#" class="shortcut nBtnCycle">
+								<img class="img" src="images/cycle3.png" alt="Snow" style=""> 
+								<span class="shortcut-label">Park the Bicycle</span> 
+							</a>
+						</div>-->
+						<div class="col">
+							<a href="#" class="shortcut" data-toggle="modal" data-target="#searchModal" data-whatever="Search a Vehicles">
+								<!-- <i class="shortcut-icon icon-list-alt"></i> -->
+								<img class="img" src="images/search1.png" alt="Snow" style="">
+								<span class="shortcut-label">Search</span> 
+							</a>
+							<!-- <a href="#" class="shortcut searchBtn"> 
+								<img class="img" src="images/search3.png" alt="Snow" style="">
+								<span class="shortcut-label">Search</span> 
+							</a> -->
+						</div>
+
+						<div class="col">
+							<!-- <a href="#" class="shortcut reportBtn">
+								<img class="img" src="images/reports3.png" alt="Snow" style="">
+								<span class="shortcut-label">Reports</span> 
+							</a> -->
+							<a href="#" class="shortcut" data-toggle="modal" data-target="#reportModal" data-whatever="Report">
+								<!-- <i class="shortcut-icon icon-list-alt"></i> -->
+								<img class="img" src="images/reports3.png" alt="Snow" style="">
+								<span class="shortcut-label">Report</span> 
+							</a>
+						</div>
+					</div>
+				</div>
+				<!-- /shortcuts --> 
+			</div>
+			<!-- /widget-content --> 
+		</div>
+	</div>
+	<hr/>
+	<h3>Data Table</h3>
+
+	
+	<table id="allData" class="table table-striped table-bordered" style="width:100%">
+        <thead>
+        
+            <tr>
+                <th>Item No</th>
+                <th>Owner Name</th>
+                <th>Contact No</th>
+                <th>No of Items</th>
+                <th>In Time</th>
+                <th>Out Time</th>
+                <!--<th>Area</th>-->
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+                
+            </tr>
+        </thead>
+        <tbody id="list-list">
+			
+			
+        </tbody> 
+       
+    </table>
+	
+	
+	<!-- The Create Modal-->
+	<form id="parkForm"  method="POST" action="/api/lockings">
+	<div class="modal fade" id="createModal" role="dialog">
+		<div class="modal-dialog modal-dialog-centered" role="document">
+			<div class="modal-content">
+
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h3 class="modal-title" id="createModalTitle" >Park it</h3>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+
+				<!-- Modal body -->
+				<div class="modal-body">
+					
+					  
+					  <div class="form-group">
+					    <!-- <label for="InputDriverName">Driver Name</label> -->
+					    <input type="text" class="form-control" id="ownerName" name="ownerName" placeholder="Full Name" value="" required/>
+					  </div>
+					  <div class="form-group">
+					    <!-- <label for="InputDriverNo">Driver Cell Number</label> -->
+					    <input type="text" class="form-control" id="phoneNo" name="phoneNo" placeholder="Mobile Number" pattern="[0-9]{11}" title="Mobile number must be 11 digits " required/>
+					    
+					  </div>  
+					  <div class="form-group">
+					    <!-- <label for="exampleInputEmail1">Vehicles Reg. No.</label> -->
+					    <input type="text" class="form-control" id="noItems" name="noItems" aria-describedby="plateNoHelp" placeholder="No. of Item" value="" required/>
+					    
+					  </div>
+					
+				</div>
+
+				<!-- Modal footer -->
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					<input type="submit" class="btn btn-success" value="Lock"/>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	</form>
+	<!-- The Edit Modal Two-->
+	<form id="editForm" action="/api/lockings/" method="PUT">
+	<div class="modal fade" id="editModal">
+		<div class="modal-dialog  ">
+			<div class="modal-content">
+
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h4 class="modal-title">Modal Heading</h4>
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+
+				<!-- Modal body -->
+				<div class="modal-body">
+					
+					<input type="text" class="form-control" id="Eid" name="id" value="" style="display:none;" />
+					  
+					 <div class="form-group">
+					    <label for="InputDriverNo">Owner Name</label>
+					    <input type="text" class="form-control" id="EparkerName" name="ownerName" placeholder="" value=""/>
+					  </div>
+					  <div class="form-group">
+					    <label for="InputDriverNo">Phone Number</label>
+					    <input type="text" class="form-control" id="EparkerPhoneNo" name="phoneNo" placeholder="" value=""/>
+					    
+					  </div>  
+					  <div class="form-group">
+					    <label for="InputDriverNo">No of Items</label>
+					    <input type="text" class="form-control" id="EplateNumber" name="noItems" aria-describedby="plateNoHelp" placeholder="" value="" />
+					    
+					  </div>
+				</div>
+
+				<!-- Modal footer -->
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					<input type="submit" class="btn btn-success" value="Save Changes"/>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	</form>
+	<!-- The report Modal Two-->
+	<div class="modal fade" id="reportModal">
+		<div class="modal-dialog  modal-xl">
+			<div class="modal-content">
+				<button class="btn"><i class="fa fa-download"></i> Download</button>
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h4 class="modal-title">Modal Heading</h4>
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+
+				<!-- Modal body -->
+				<div class="modal-body">
+				<table id="reportData" class="table table-striped table-bordered" style="width:100%">
+			        <thead>
+			        
+			            <tr>
+			                <th>Item No</th>
+			                <th>Owner Name</th>
+			                <th>Contact No</th>
+			                <th>No of Items</th>
+			                <th>In Time</th>
+			                <th>Out Time</th>
+			                <!--<th>Area</th>-->
+			                <th>Amount</th>
+			                <th>Status</th>
+			                
+			                
+			            </tr>
+			        </thead>
+			        <tbody id="reportlist">
+						
+							
+							
+				     </tbody> 
+			        <!--<tfoot>
+			            <tr>
+			                <th>SL No</th>
+			                <th>Full Name</th>
+			                <th>Contact No.</th>
+			                <th>Reg. No.</th>
+			                <th>In Time</th>
+			                <th>Out Time</th>
+			                <th>Area</th>
+			                <th>Amount</th>
+			                <th>Status</th>
+			                
+			            </tr>
+			        </tfoot>-->
+			    </table>
+					  
+				</div>
+
+				<!-- Modal footer -->
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	<!-- The searchModal Three-->
+	
+	<form id="checkoutForm" action="/api/checkout/" method="PUT">
+	<div class="modal fade" id="searchModal">
+		<div class="modal-dialog modal-dialog-centered modal-md">
+			<div class="modal-content">
+
+				<!-- Modal Header -->
+				<div class="modal-header">
+					<h4 class="modal-title">Search Item</h4>
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+
+				<!-- Modal body -->
+				<div class="modal-body">
+				<!-- <form id="parkForm" th:action="@{search}" method="post"> -->
+				
+				<div class="row">
+					<div class="form-group">
+					<div class="col-lg">
+				      <input class="form-control" type="text" id="plateNumber" name="plateNumber" placeholder="Phone Number" required>
+				      </div>
+				      </div>
+				      <div class="form-group">
+				      <div class="col-sm">
+				      <button class="btn btn-success sBtn" type="button">Search</button>
+				      </div>
+				    </div>
+				 </div>
+				 <!-- </form> -->
+				 
+				 <div class="row">
+				 	<div class="col-lg-12">
+				 		<div id="searchResult">
+							 <table class="table table-sm">
+								    
+								    
+								  <!--  <tr scope="row">
+								        <th>OTP </th>
+								        <td>
+											<div class="col-lg">
+										      <input class="form-control" type="text" id="OTP" name="OTP" >
+										      </div>
+				      					</td>
+								    </tr>-->
+								</table>
+						 </div>
+				 		
+				 	</div>
+				 	
+				 </div>
+				 
+				</div>
+
+				<!-- Modal footer -->
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					<input type="submit" class="btn btn-success CheckOut" value="CheckOut"/>
+				</div>
+
+			</div>
+		</div>
+	</div>
+	</form>
+	
+	</body>
+</html>

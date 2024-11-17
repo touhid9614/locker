@@ -1,0 +1,66 @@
+body{
+
+	width: 72%;
+	margin: 0 auto;
+}
+
+
+.pg_jumbotron{
+	float: left;
+}
+.pg_thumbnail:hover {
+/*background-color: black;*/
+opacity: 0.5;
+border: 2px solid black !important;
+}
+
+/*------------------------------------------------------------------
+[1. Shortcuts / .shortcuts]
+*/
+
+.shortcuts {
+	text-align: center;	
+}
+
+.shortcuts .shortcut { 
+	/*width: 22.50%;*/
+	display: inline-block;
+	padding: 12px 0;
+	margin: 0 .9% 1em;
+	vertical-align: top;	
+	
+	text-decoration: none;
+	
+	background: #f9f6f1;
+	
+	border-radius: 5px;
+}
+
+.shortcuts .shortcut .shortcut-icon {
+	margin-top: .25em;
+	margin-bottom: .25em;
+	
+	font-size: 32px;
+	color: #545454;
+}
+
+.shortcuts .shortcut:hover {
+	/*background: #00ba8b;*/
+	background: #ddd;
+}
+
+.shortcuts .shortcut:hover span{
+	color: black;
+	font-weight: bold;
+}
+
+.shortcuts .shortcut:hover .shortcut-icon {
+	color: #fff;
+}
+
+.shortcuts .shortcut-label {
+	display: block;
+	
+	font-weight: 400;
+	color: #545454;
+}
